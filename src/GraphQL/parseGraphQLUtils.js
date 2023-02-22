@@ -16,7 +16,7 @@ export function toGraphQLError(error) {
     code = Parse.Error.INTERNAL_SERVER_ERROR;
     message = 'Internal server error';
   }
-  return new GraphQLError(message, { extensions: { code } });
+  return new GraphQLError(message, { extensions: { code, parseError: error } });
 }
 
 export const extractKeysAndInclude = selectedFields => {
