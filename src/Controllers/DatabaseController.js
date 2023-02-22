@@ -10,16 +10,16 @@ import _ from 'lodash';
 import intersect from 'intersect';
 // @flow-disable-next
 import deepcopy from 'deepcopy';
-import logger from '../logger';
-import Utils from '../Utils';
-import * as SchemaController from './SchemaController';
-import { StorageAdapter } from '../Adapters/Storage/StorageAdapter';
+import SchemaCache from '../Adapters/Cache/SchemaCache';
 import MongoStorageAdapter from '../Adapters/Storage/Mongo/MongoStorageAdapter';
 import PostgresStorageAdapter from '../Adapters/Storage/Postgres/PostgresStorageAdapter';
-import SchemaCache from '../Adapters/Cache/SchemaCache';
-import type { LoadSchemaOptions } from './types';
+import type { FullQueryOptions, QueryOptions } from '../Adapters/Storage/StorageAdapter';
+import { StorageAdapter } from '../Adapters/Storage/StorageAdapter';
+import logger from '../logger';
 import type { ParseServerOptions } from '../Options';
-import type { QueryOptions, FullQueryOptions } from '../Adapters/Storage/StorageAdapter';
+import Utils from '../Utils';
+import * as SchemaController from './SchemaController';
+import type { LoadSchemaOptions } from './types';
 
 function addWriteACL(query, acl) {
   const newQuery = _.cloneDeep(query);
@@ -1283,7 +1283,7 @@ class DatabaseController {
                   return this.adapter.distinct(className, schema, query, distinct);
                 }
               } else if (pipeline) {
-                if (!classExists) {
+                if (!classExists || className === '_Join:users:_Role') {
                   return [];
                 } else {
                   return this.adapter.aggregate(
