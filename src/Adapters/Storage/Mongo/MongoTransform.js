@@ -1,5 +1,5 @@
-import log from '../../../logger';
 import _ from 'lodash';
+import log from '../../../logger';
 var mongodb = require('mongodb');
 var Parse = require('parse/node').Parse;
 const Utils = require('../../../Utils');
@@ -1015,7 +1015,11 @@ function mapValues(object, iterator) {
   Object.keys(object).forEach(key => {
     result[key] = iterator(object[key]);
     if (result[key] && JSON.stringify(result[key]).includes(`"__type"`)) {
-      result[key] = mapValues(object[key], iterator);
+      if (object[key] instanceof Date) {
+        result[key] = object[key];
+      } else {
+        result[key] = mapValues(object[key], iterator);
+      }
     }
   });
   return result;
