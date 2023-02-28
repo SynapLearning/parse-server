@@ -1011,17 +1011,21 @@ function transformUpdateOperator({ __op, amount, objects }, flatten) {
   }
 }
 function mapValues(object, iterator) {
-  const result = {};
-  Object.keys(object).forEach(key => {
-    result[key] = iterator(object[key]);
-    if (result[key] && JSON.stringify(result[key]).includes(`"__type"`)) {
-      if (object[key] instanceof Date) {
-        result[key] = object[key];
-      } else {
-        result[key] = mapValues(object[key], iterator);
+  let result = {};
+  if (Array.isArray(object)) {
+    result = object;
+  } else {
+    Object.keys(object).forEach(key => {
+      result[key] = iterator(object[key]);
+      if (result[key] && JSON.stringify(result[key]).includes(`"__type"`)) {
+        if (object[key] instanceof Date) {
+          result[key] = object[key];
+        } else {
+          result[key] = mapValues(object[key], iterator);
+        }
       }
-    }
-  });
+    });
+  }
   return result;
 }
 
