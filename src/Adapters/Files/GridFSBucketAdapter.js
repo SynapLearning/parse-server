@@ -20,7 +20,7 @@ export class GridFSBucketAdapter extends FilesAdapter {
 
   constructor(
     mongoDatabaseURI = defaults.DefaultMongoURI,
-    mongoOptions = {},
+    databaseOptions = {},
     encryptionKey = undefined
   ) {
     super();
@@ -38,11 +38,11 @@ export class GridFSBucketAdapter extends FilesAdapter {
       useNewUrlParser: true,
       useUnifiedTopology: true,
     };
-    const _mongoOptions = Object.assign(defaultMongoOptions, mongoOptions);
+    const mongoOptions = { ...databaseOptions };
     for (const key of ['enableSchemaHooks', 'schemaCacheTtl', 'maxTimeMS']) {
-      delete _mongoOptions[key];
+      delete mongoOptions[key];
     }
-    this._mongoOptions = _mongoOptions;
+    this._mongoOptions = Object.assign(defaultMongoOptions, mongoOptions);
   }
 
   _connect() {

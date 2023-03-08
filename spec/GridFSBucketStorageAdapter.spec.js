@@ -32,7 +32,11 @@ describe_only_db('mongo')('GridFSBucket', () => {
 
     const db = await gfsAdapter._connect();
     const status = await db.admin().serverStatus();
+
+    // connection will fail if unsupported keys are
+    // passed into the mongo connection options
     expect(status.connections.current > 0).toEqual(true);
+
     expect(db.options?.retryWrites).toEqual(true);
   });
 
