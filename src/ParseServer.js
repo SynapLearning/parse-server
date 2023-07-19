@@ -235,8 +235,6 @@ class ParseServer {
           // user-friendly message for this common error
           process.stderr.write(`Unable to listen on port ${err.port}. The port is already in use.`);
           process.exit(0);
-        } else {
-          throw err;
         }
       });
       // verify the server url after a 'mount' event is received
