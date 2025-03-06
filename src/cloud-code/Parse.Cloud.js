@@ -1,6 +1,5 @@
 import { Parse } from 'parse/node';
 import * as triggers from '../triggers';
-import Deprecator from '../Deprecator/Deprecator';
 import { addRateLimit } from '../middlewares';
 const Config = require('../Config');
 
@@ -80,11 +79,15 @@ const getRoute = parseClass => {
       _User: 'users',
       _Session: 'sessions',
       '@File': 'files',
+      '@Config' : 'config',
     }[parseClass] || 'classes';
   if (parseClass === '@File') {
-    return `/${route}/:id?*`;
+    return `/${route}/:id?(.*)`;
   }
-  return `/${route}/${parseClass}/:id?*`;
+  if (parseClass === '@Config') {
+    return `/${route}`;
+  }
+  return `/${route}/${parseClass}/:id?(.*)`;
 };
 /** @namespace
  * @name Parse
@@ -128,7 +131,8 @@ ParseCloud.define = function (functionName, handler, validationHandler) {
   if (validationHandler && validationHandler.rateLimit) {
     addRateLimit(
       { requestPath: `/functions/${functionName}`, ...validationHandler.rateLimit },
-      Parse.applicationId
+      Parse.applicationId,
+      true
     );
   }
 };
@@ -191,7 +195,8 @@ ParseCloud.beforeSave = function (parseClass, handler, validationHandler) {
         requestMethods: ['POST', 'PUT'],
         ...validationHandler.rateLimit,
       },
-      Parse.applicationId
+      Parse.applicationId,
+      true
     );
   }
 };
@@ -237,7 +242,8 @@ ParseCloud.beforeDelete = function (parseClass, handler, validationHandler) {
         requestMethods: 'DELETE',
         ...validationHandler.rateLimit,
       },
-      Parse.applicationId
+      Parse.applicationId,
+      true
     );
   }
 };
@@ -278,7 +284,8 @@ ParseCloud.beforeLogin = function (handler, validationHandler) {
   if (validationHandler && validationHandler.rateLimit) {
     addRateLimit(
       { requestPath: `/login`, requestMethods: 'POST', ...validationHandler.rateLimit },
-      Parse.applicationId
+      Parse.applicationId,
+      true
     );
   }
 };
@@ -456,7 +463,8 @@ ParseCloud.beforeFind = function (parseClass, handler, validationHandler) {
         requestMethods: 'GET',
         ...validationHandler.rateLimit,
       },
-      Parse.applicationId
+      Parse.applicationId,
+      true
     );
   }
 };
@@ -495,130 +503,6 @@ ParseCloud.afterFind = function (parseClass, handler, validationHandler) {
     Parse.applicationId,
     validationHandler
   );
-};
-
-/**
- * Registers a before save file function.
- *
- * **Available in Cloud Code only.**
- *
- * ```
- * Parse.Cloud.beforeSaveFile(async (request) => {
- *   // code here
- * }, (request) => {
- *   // validation code here
- * });
- *
- * Parse.Cloud.beforeSaveFile(async (request) => {
- *   // code here
- * }, { ...validationObject });
- *```
- *
- * @method beforeSaveFile
- * @deprecated
- * @name Parse.Cloud.beforeSaveFile
- * @param {Function} func The function to run before saving a file. This function can be async and should take just one parameter, {@link Parse.Cloud.FileTriggerRequest}.
- * @param {(Object|Function)} validator An optional function to help validating cloud code. This function can be an async function and should take one parameter a {@link Parse.Cloud.FileTriggerRequest}, or a {@link Parse.Cloud.ValidatorObject}.
- */
-ParseCloud.beforeSaveFile = function (handler, validationHandler) {
-  Deprecator.logRuntimeDeprecation({
-    usage: 'Parse.Cloud.beforeSaveFile',
-    solution: 'Use Parse.Cloud.beforeSave(Parse.File, (request) => {})',
-  });
-  ParseCloud.beforeSave(Parse.File, handler, validationHandler);
-};
-
-/**
- * Registers an after save file function.
- *
- * **Available in Cloud Code only.**
- *
- * ```
- * Parse.Cloud.afterSaveFile(async (request) => {
- *   // code here
- * }, (request) => {
- *   // validation code here
- * });
- *
- * Parse.Cloud.afterSaveFile(async (request) => {
- *  // code here
- * }, { ...validationObject });
- *```
- *
- * @method afterSaveFile
- * @deprecated
- * @name Parse.Cloud.afterSaveFile
- * @param {Function} func The function to run after saving a file. This function can be async and should take just one parameter, {@link Parse.Cloud.FileTriggerRequest}.
- * @param {(Object|Function)} validator An optional function to help validating cloud code. This function can be an async function and should take one parameter a {@link Parse.Cloud.FileTriggerRequest}, or a {@link Parse.Cloud.ValidatorObject}.
- */
-ParseCloud.afterSaveFile = function (handler, validationHandler) {
-  Deprecator.logRuntimeDeprecation({
-    usage: 'Parse.Cloud.afterSaveFile',
-    solution: 'Use Parse.Cloud.afterSave(Parse.File, (request) => {})',
-  });
-  ParseCloud.afterSave(Parse.File, handler, validationHandler);
-};
-
-/**
- * Registers a before delete file function.
- *
- * **Available in Cloud Code only.**
- *
- * ```
- * Parse.Cloud.beforeDeleteFile(async (request) => {
- *   // code here
- * }, (request) => {
- *   // validation code here
- * });
- *
- * Parse.Cloud.beforeDeleteFile(async (request) => {
- *   // code here
- * }, { ...validationObject });
- *```
- *
- * @method beforeDeleteFile
- * @deprecated
- * @name Parse.Cloud.beforeDeleteFile
- * @param {Function} func The function to run before deleting a file. This function can be async and should take just one parameter, {@link Parse.Cloud.FileTriggerRequest}.
- * @param {(Object|Function)} validator An optional function to help validating cloud code. This function can be an async function and should take one parameter a {@link Parse.Cloud.FileTriggerRequest}, or a {@link Parse.Cloud.ValidatorObject}.
- */
-ParseCloud.beforeDeleteFile = function (handler, validationHandler) {
-  Deprecator.logRuntimeDeprecation({
-    usage: 'Parse.Cloud.beforeDeleteFile',
-    solution: 'Use Parse.Cloud.beforeDelete(Parse.File, (request) => {})',
-  });
-  ParseCloud.beforeDelete(Parse.File, handler, validationHandler);
-};
-
-/**
- * Registers an after delete file function.
- *
- * **Available in Cloud Code only.**
- *
- * ```
- * Parse.Cloud.afterDeleteFile(async (request) => {
- *   // code here
- * }, (request) => {
- *   // validation code here
- * });
- *
- * Parse.Cloud.afterDeleteFile(async (request) => {
- *   // code here
- * }, { ...validationObject });
- *```
- *
- * @method afterDeleteFile
- * @deprecated
- * @name Parse.Cloud.afterDeleteFile
- * @param {Function} func The function to after before deleting a file. This function can be async and should take just one parameter, {@link Parse.Cloud.FileTriggerRequest}.
- * @param {(Object|Function)} validator An optional function to help validating cloud code. This function can be an async function and should take one parameter a {@link Parse.Cloud.FileTriggerRequest}, or a {@link Parse.Cloud.ValidatorObject}.
- */
-ParseCloud.afterDeleteFile = function (handler, validationHandler) {
-  Deprecator.logRuntimeDeprecation({
-    usage: 'Parse.Cloud.afterDeleteFile',
-    solution: 'Use Parse.Cloud.afterDelete(Parse.File, (request) => {})',
-  });
-  ParseCloud.afterDelete(Parse.File, handler, validationHandler);
 };
 
 /**
@@ -761,6 +645,8 @@ ParseCloud.afterLiveQueryEvent = function (parseClass, handler, validationHandle
 
 ParseCloud._removeAllHooks = () => {
   triggers._unregisterAll();
+  const config = Config.get(Parse.applicationId);
+  config?.unregisterRateLimiters();
 };
 
 ParseCloud.useMasterKey = () => {
@@ -796,7 +682,7 @@ module.exports = ParseCloud;
  * @property {Integer} contentLength The value from Content-Length header
  * @property {String} ip The IP address of the client making the request.
  * @property {Object} headers The original HTTP headers for the request.
- * @property {String} triggerName The name of the trigger (`beforeSaveFile`, `afterSaveFile`)
+ * @property {String} triggerName The name of the trigger (`beforeSave`, `afterSave`)
  * @property {Object} log The current logger inside Parse Server.
  */
 

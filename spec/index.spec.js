@@ -367,6 +367,22 @@ describe('server', () => {
     });
   });
 
+  it('should throw when extendSessionOnUse is invalid', async () => {
+    await expectAsync(
+      reconfigureServer({
+        extendSessionOnUse: 'yolo',
+      })
+    ).toBeRejectedWith('extendSessionOnUse must be a boolean value');
+  });
+
+  it('should throw when revokeSessionOnPasswordReset is invalid', async () => {
+    await expectAsync(
+      reconfigureServer({
+        revokeSessionOnPasswordReset: 'yolo',
+      })
+    ).toBeRejectedWith('revokeSessionOnPasswordReset must be a boolean value');
+  });
+
   it('fails if the session length is not a number', done => {
     reconfigureServer({ sessionLength: 'test' })
       .then(done.fail)
@@ -558,7 +574,7 @@ describe('server', () => {
   });
 
   it('can get starting state', async () => {
-    await reconfigureServer({ appId: 'test2', silent: false });
+    await reconfigureServer({ appId: 'test2' });
     const parseServer = new ParseServer.ParseServer({
       ...defaultConfiguration,
       appId: 'test2',
@@ -584,6 +600,63 @@ describe('server', () => {
     await startingPromise;
     await new Promise(resolve => server.close(resolve));
   });
+
+  it('should load masterKey', async () => {
+    await reconfigureServer({
+      masterKey: () => 'testMasterKey',
+      masterKeyTtl: 1000, // TTL is set
+    });
+
+    await new Parse.Object('TestObject').save();
+
+    const config = Config.get(Parse.applicationId);
+    expect(config.masterKeyCache.masterKey).toEqual('testMasterKey');
+    expect(config.masterKeyCache.expiresAt.getTime()).toBeGreaterThan(Date.now());
+  });
+
+  it('should not reload if ttl is not set', async () => {
+    const masterKeySpy = jasmine.createSpy().and.returnValue(Promise.resolve('initialMasterKey'));
+
+    await reconfigureServer({
+      masterKey: masterKeySpy,
+      masterKeyTtl: null, // No TTL set
+    });
+
+    await new Parse.Object('TestObject').save();
+
+    const config = Config.get(Parse.applicationId);
+    const firstMasterKey = config.masterKeyCache.masterKey;
+
+    // Simulate calling the method again
+    await config.loadMasterKey();
+    const secondMasterKey = config.masterKeyCache.masterKey;
+
+    expect(firstMasterKey).toEqual('initialMasterKey');
+    expect(secondMasterKey).toEqual('initialMasterKey');
+    expect(masterKeySpy).toHaveBeenCalledTimes(1); // Should only be called once
+    expect(config.masterKeyCache.expiresAt).toBeNull(); // TTL is not set, so expiresAt should remain null
+  });
+
+  it('should reload masterKey if ttl is set and expired', async () => {
+    const masterKeySpy = jasmine.createSpy()
+      .and.returnValues(Promise.resolve('firstMasterKey'), Promise.resolve('secondMasterKey'));
+
+    await reconfigureServer({
+      masterKey: masterKeySpy,
+      masterKeyTtl: 1 / 1000, // TTL is set to 1ms
+    });
+
+    await new Parse.Object('TestObject').save();
+
+    await new Promise(resolve => setTimeout(resolve, 10));
+
+    await new Parse.Object('TestObject').save();
+
+    const config = Config.get(Parse.applicationId);
+    expect(masterKeySpy).toHaveBeenCalledTimes(2);
+    expect(config.masterKeyCache.masterKey).toEqual('secondMasterKey');
+  });
+
 
   it('should not fail when Google signin is introduced without the optional clientId', done => {
     const jwt = require('jsonwebtoken');

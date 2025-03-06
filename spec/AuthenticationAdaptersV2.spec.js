@@ -348,7 +348,7 @@ describe('Auth Adapter features', () => {
   it('should strip out authData if required', async () => {
     const spy = spyOn(modernAdapter3, 'validateOptions').and.callThrough();
     const afterSpy = spyOn(modernAdapter3, 'afterFind').and.callThrough();
-    await reconfigureServer({ auth: { modernAdapter3 }, silent: false });
+    await reconfigureServer({ auth: { modernAdapter3 } });
     const user = new Parse.User();
     await user.save({ authData: { modernAdapter3: { id: 'modernAdapter3Data' } } });
     await user.fetch({ sessionToken: user.getSessionToken() });
@@ -367,16 +367,6 @@ describe('Auth Adapter features', () => {
       undefined
     );
     expect(spy).toHaveBeenCalled();
-  });
-
-  it('should throw if no triggers found', async () => {
-    await reconfigureServer({ auth: { wrongAdapter } });
-    const user = new Parse.User();
-    await expectAsync(
-      user.save({ authData: { wrongAdapter: { id: 'wrongAdapter' } } })
-    ).toBeRejectedWithError(
-      'Adapter is not configured. Implement either validateAuthData or all of the following: validateSetUp, validateLogin and validateUpdate'
-    );
   });
 
   it('should throw if policy does not match one of default/solo/additional', async () => {
@@ -485,6 +475,33 @@ describe('Auth Adapter features', () => {
     });
 
     expect(baseAdapter2.validateAuthData).toHaveBeenCalledTimes(2);
+  });
+
+  it('should not perform authData validation twice when data mutated', async () => {
+    spyOn(baseAdapter, 'validateAuthData').and.resolveTo({});
+    await reconfigureServer({
+      auth: { baseAdapter },
+      allowExpiredAuthDataToken: false,
+    });
+
+    const user = new Parse.User();
+
+    await user.save({
+      authData: {
+        baseAdapter: { id: 'baseAdapter', token: "sometoken1" },
+      },
+    });
+
+    expect(baseAdapter.validateAuthData).toHaveBeenCalledTimes(1);
+
+    const user2 = new Parse.User();
+    await user2.save({
+      authData: {
+        baseAdapter: { id: 'baseAdapter', token: "sometoken2" },
+      },
+    });
+
+    expect(baseAdapter.validateAuthData).toHaveBeenCalledTimes(2);
   });
 
   it('should require additional provider if configured', async () => {
