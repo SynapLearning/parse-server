@@ -21,7 +21,7 @@ export class GridFSBucketAdapter extends FilesAdapter {
 
   constructor(
     mongoDatabaseURI = defaults.DefaultMongoURI,
-    mongoOptions = {},
+    databaseOptions = {},
     encryptionKey = undefined
   ) {
     super();
@@ -36,6 +36,10 @@ export class GridFSBucketAdapter extends FilesAdapter {
           .substring(0, 32)
         : null;
     const defaultMongoOptions = {};
+    const mongoOptions = { ...databaseOptions };
+    for (const key of ['enableSchemaHooks', 'schemaCacheTtl', 'maxTimeMS']) {
+      delete mongoOptions[key];
+    }
     const _mongoOptions = Object.assign(defaultMongoOptions, mongoOptions);
     this._clientMetadata = mongoOptions.clientMetadata;
     this._batchSize = mongoOptions.batchSize;

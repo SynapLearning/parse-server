@@ -1331,7 +1331,7 @@ class DatabaseController {
                   return this.adapter.distinct(className, schema, query, distinct);
                 }
               } else if (pipeline) {
-                if (!classExists) {
+                if (!classExists || className === '_Join:users:_Role') {
                   return [];
                 } else {
                   return this.adapter.aggregate(

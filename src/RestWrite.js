@@ -44,6 +44,11 @@ function RestWrite(config, auth, className, query, data, originalData, clientSDK
   this.runOptions = {};
   this.context = context || {};
 
+  if (!!data && data._context && data._context instanceof Object) {
+    this.context = data._context;
+    delete data._context;
+  }
+
   if (action) {
     this.runOptions.action = action;
   }
